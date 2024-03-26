@@ -104,6 +104,14 @@ class Application(tk.Tk):
         self.action_tree.heading("three", text="Detalle 3")
         self.action_tree.heading("four", text="Detalle 4")
 
+        # Inicializar el último tipo de acción y el último elemento padre a None
+        self.last_action_type = None
+        self.last_parent = None
+
+        # Crear elementos padre para cada tipo de acción
+        # self.mouse_parent = self.action_tree.insert('', 'end', text='mouse')
+        # self.keyboard_parent = self.action_tree.insert('', 'end', text='keyboard')
+
         self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
         self.clear_button.grid(row=5, column=0, sticky='nsew')
 
@@ -129,7 +137,14 @@ class Application(tk.Tk):
 
     def update_list(self, action):
         action_type, *details = action
-        self.action_tree.insert('', 'end', text=action_type, values=details)
+        if action_type != self.last_action_type:
+            # Si el tipo de acción ha cambiado, crear un nuevo elemento padre
+            self.last_parent = self.action_tree.insert('', 'end', text=action_type)
+            self.last_action_type = action_type
+        # Insertar la acción como un elemento hijo del último elemento padre
+        self.action_tree.insert(self.last_parent, 'end', text=action_type, values=details)
+        # Desplegar el elemento padre
+        self.action_tree.item(self.last_parent, open=True)
 
     def update_playback(self, index):
         if self.playback_index is not None:
