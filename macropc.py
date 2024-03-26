@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from pynput import mouse, keyboard
 import threading
 import time
@@ -88,9 +89,20 @@ class Application(tk.Tk):
         self.play_button = tk.Button(self, text="Reproducir", command=self.play_recording)
         self.play_button.grid(row=1, column=0, sticky='nsew')
 
-        self.action_list = tk.Listbox(self, selectmode=tk.EXTENDED)
-        self.action_list.grid(row=3, column=0, sticky='nsew')
-        self.action_list.bind('<Delete>', self.delete_selected_action)
+        self.action_tree = ttk.Treeview(self)
+        self.action_tree.grid(row=3, column=0, sticky='nsew')
+        self.action_tree.bind('<Delete>', self.delete_selected_action)
+        self.action_tree["columns"]=("one","two","three","four")
+        self.action_tree.column("#0", width=100 )
+        self.action_tree.column("one", width=100 )
+        self.action_tree.column("two", width=100)
+        self.action_tree.column("three", width=100)
+        self.action_tree.column("four", width=100)
+        self.action_tree.heading("#0",text="Tipo")
+        self.action_tree.heading("one", text="Detalle 1")
+        self.action_tree.heading("two", text="Detalle 2")
+        self.action_tree.heading("three", text="Detalle 3")
+        self.action_tree.heading("four", text="Detalle 4")
 
         self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
         self.clear_button.grid(row=5, column=0, sticky='nsew')
@@ -116,8 +128,8 @@ class Application(tk.Tk):
         self.recorder.play_thread.start()
 
     def update_list(self, action):
-        action_desc = f"{action[0]}: {action[1:]}" if action[0] == 'mouse' else f"{action[0]}: {action[1]}, {action[2]}"
-        self.action_list.insert(tk.END, action_desc)
+        action_type, *details = action
+        self.action_tree.insert('', 'end', text=action_type, values=details)
 
     def update_playback(self, index):
         if self.playback_index is not None:
@@ -137,9 +149,8 @@ class Application(tk.Tk):
         selections = sorted(selections, reverse=True)
         for index in selections:
             del self.recorder.recorded_actions[index]
-            self.action_list.delete(index)
-        if self.playback_index is not None and index <= self.playback_index:
-            self.playback_index = None
+            self.action_list.delete(index)        
+        self.playback_index = None
 
 app = Application()
 app.mainloop()
