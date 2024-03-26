@@ -28,21 +28,22 @@ class MouseKeyboardRecorder:
         self.keyboard_listener.stop()
 
     def play_actions(self):
+        mouse_controller = mouse.Controller()
+        keyboard_controller = keyboard.Controller()
+
         for action in self.recorded_actions:
             if action[0] == 'mouse':
                 _, x, y, button, pressed = action
-                with mouse.Controller() as mouse_controller:
-                    mouse_controller.position = (x, y)
-                    if pressed:
-                        mouse_controller.press(button)
-                    else:
-                        mouse_controller.release(button)
+                mouse_controller.position = (x, y)
+                if pressed:
+                    mouse_controller.press(button)
+                else:
+                    mouse_controller.release(button)
 
             elif action[0] == 'keyboard':
                 _, key = action
-                with keyboard.Controller() as keyboard_controller:
-                    keyboard_controller.press(key)
-                    keyboard_controller.release(key)
+                keyboard_controller.press(key)
+                keyboard_controller.release(key)
 
 class Application(tk.Tk):
     def __init__(self):
