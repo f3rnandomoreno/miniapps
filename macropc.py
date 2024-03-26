@@ -88,7 +88,7 @@ class Application(tk.Tk):
         self.play_button = tk.Button(self, text="Reproducir", command=self.play_recording)
         self.play_button.grid(row=1, column=0, sticky='nsew')
 
-        self.action_list = tk.Listbox(self)
+        self.action_list = tk.Listbox(self, selectmode=tk.EXTENDED)
         self.action_list.grid(row=3, column=0, sticky='nsew')
 
         self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
@@ -130,9 +130,10 @@ class Application(tk.Tk):
         self.action_list.delete(0, tk.END)
 
     def delete_selected_action(self):
-        selection = self.action_list.curselection()
-        if selection:
-            index = selection[0]
+        selections = self.action_list.curselection()
+        # Ordenar las selecciones en orden inverso para evitar problemas de índice
+        selections = sorted(selections, reverse=True)
+        for index in selections:
             del self.recorder.recorded_actions[index]
             self.action_list.delete(index)
 
