@@ -15,24 +15,20 @@ class MouseKeyboardRecorder:
 
     def on_click(self, x, y, button, pressed):
         if self.recording:
-            action = ('mouse', x, y, str(button), pressed)
-            self.recorded_actions.append(action)
-            self.update_callback(action)
+            self.recorded_actions.append(('mouse', x, y, str(button), pressed))
+            self.update_callback(self.recorded_actions[-1])
 
     def on_press(self, key):
         if self.recording:
-            action = ('keyboard', 'press', key)
-            self.recorded_actions.append(action)
-            self.update_callback(action)
+            self.recorded_actions.append(('keyboard', 'press', key))
+            self.update_callback(self.recorded_actions[-1])
 
     def on_release(self, key):
         if self.recording:
-            action = ('keyboard', 'release', key)
-            self.recorded_actions.append(action)
-            self.update_callback(action)
+            self.recorded_actions.append(('keyboard', 'release', key))
+            self.update_callback(self.recorded_actions[-1])
 
     def start_recording(self):
-        self.stop_playing()
         self.recording = True
         self.mouse_listener = mouse.Listener(on_click=self.on_click)
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
@@ -76,16 +72,10 @@ class MouseKeyboardRecorder:
                     print(f"Error al simular la tecla: {e}")
             time.sleep(0.1)
 
-    def stop_playing(self):
-        self.playing = False
-        if self.play_thread:
-            self.play_thread.join()
-            self.play_thread = None
-
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.geometry("800x600")  # Configura el tamaño inicial de la ventana
+        self.geometry("800x600")
         self.recorder = MouseKeyboardRecorder(self.update_list)
         self.create_widgets()
         self.playback_index = None
@@ -98,17 +88,14 @@ class Application(tk.Tk):
         self.play_button = tk.Button(self, text="Reproducir", command=self.play_recording)
         self.play_button.grid(row=1, column=0, sticky='nsew')
 
-        self.stop_play_button = tk.Button(self, text="Detener Reproducción", command=self.stop_playing)
-        self.stop_play_button.grid(row=2, column=0, sticky='nsew')
-
         self.action_list = tk.Listbox(self)
         self.action_list.grid(row=3, column=0, sticky='nsew')
 
-        self.delete_button = tk.Button(self, text="Borrar acción seleccionada", command=self.delete_selected_action)
-        self.delete_button.grid(row=4, column=0, sticky='nsew')
-
         self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
         self.clear_button.grid(row=5, column=0, sticky='nsew')
+
+        self.delete_button = tk.Button(self, text="Borrar acción seleccionada", command=self.delete_selected_action)
+        self.delete_button.grid(row=4, column=0, sticky='nsew')
 
     def configure_grid(self):
         self.grid_columnconfigure(0, weight=1)
@@ -124,12 +111,8 @@ class Application(tk.Tk):
         self.record_button.config(text="Grabar", command=self.start_recording)
 
     def play_recording(self):
-        self.recorder.stop_playing()
         self.recorder.play_thread = threading.Thread(target=lambda: self.recorder.play_actions(self.update_playback))
         self.recorder.play_thread.start()
-
-    def stop_playing(self):
-        self.recorder.stop_playing()
 
     def update_list(self, action):
         action_desc = f"{action[0]}: {action[1:]}" if action[0] == 'mouse' else f"{action[0]}: {action[1]}, {action[2]}"
@@ -143,12 +126,10 @@ class Application(tk.Tk):
         self.action_list.see(index)
 
     def clear_actions(self):
-        self.recorder.stop_playing()
         self.recorder.recorded_actions.clear()
         self.action_list.delete(0, tk.END)
 
     def delete_selected_action(self):
-        self.recorder.stop_playing()
         selection = self.action_list.curselection()
         if selection:
             index = selection[0]
