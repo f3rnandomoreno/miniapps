@@ -3,19 +3,6 @@ from pynput import mouse, keyboard
 import threading
 import time
 
-def get_key_from_string(key_str):
-    try:
-        # Para teclas especiales como 'Key.f1', 'Key.space', etc.
-        if key_str.startswith('Key.'):
-            return getattr(keyboard.Key, key_str.split('.')[1])
-        # Para caracteres individuales como letras y números
-        else:
-            return keyboard.KeyCode.from_char(key_str)
-    except AttributeError:
-        # En caso de que la tecla no sea reconocida
-        return None
-
-
 class MouseKeyboardRecorder:
     def __init__(self, update_callback):
         self.recorded_actions = []
@@ -32,7 +19,11 @@ class MouseKeyboardRecorder:
 
     def on_press(self, key):
         if self.recording:
-            action = ('keyboard', str(key))
+            try:
+                # Guardar el valor de escaneo y la tecla
+                action = ('keyboard', key.value.vk if hasattr(key, 'value') else key.vk)
+            except AttributeError:
+                action = ('keyboard', None)
             self.recorded_actions.append(action)
             self.update_callback(action)
 
@@ -61,11 +52,14 @@ class MouseKeyboardRecorder:
                     mouse_controller.release(eval('mouse.' + button))
 
             elif action[0] == 'keyboard':
-                _, key_str = action
-                key = get_key_from_string(key_str)
-                if key:
-                    keyboard_controller.press(key)
-                    keyboard_controller.release(key)
+                _, vk = action
+                try:
+                    if vk is not None:
+                        key = keyboard.KeyCode.from_vk(vk)
+                        keyboard_controller.press(key)
+                        keyboard_controller.release(key)
+                except Exception as e:
+                    print(f"Error al simular la tecla: {e}")
             time.sleep(0.1)  # Delay for demonstration purposes
 
 class Application(tk.Tk):
