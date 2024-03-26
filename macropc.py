@@ -9,7 +9,7 @@ class MouseKeyboardRecorder:
         self.recording = False
         self.update_callback = update_callback
         self.mouse_listener = mouse.Listener(on_click=self.on_click)
-        self.keyboard_listener = keyboard.Listener(on_press=self.on_press)
+        self.keyboard_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
 
     def on_click(self, x, y, button, pressed):
         if self.recording:
@@ -19,11 +19,13 @@ class MouseKeyboardRecorder:
 
     def on_press(self, key):
         if self.recording:
-            try:
-                # Guardar el valor de escaneo y la tecla
-                action = ('keyboard', key.value.vk if hasattr(key, 'value') else key.vk)
-            except AttributeError:
-                action = ('keyboard', None)
+            action = ('keyboard', 'press', key)
+            self.recorded_actions.append(action)
+            self.update_callback(action)
+
+    def on_release(self, key):
+        if self.recording:
+            action = ('keyboard', 'release', key)
             self.recorded_actions.append(action)
             self.update_callback(action)
 
@@ -43,20 +45,22 @@ class MouseKeyboardRecorder:
 
         for i, action in enumerate(self.recorded_actions):
             update_playback(i)
-            if action[0] == 'mouse':
-                _, x, y, button, pressed = action
+            action_type, *details = action
+
+            if action_type == 'mouse':
+                x, y, button, pressed = details
                 mouse_controller.position = (x, y)
                 if pressed:
                     mouse_controller.press(eval('mouse.' + button))
                 else:
                     mouse_controller.release(eval('mouse.' + button))
 
-            elif action[0] == 'keyboard':
-                _, vk = action
+            elif action_type == 'keyboard':
+                press_or_release, key = details
                 try:
-                    if vk is not None:
-                        key = keyboard.KeyCode.from_vk(vk)
+                    if press_or_release == 'press':
                         keyboard_controller.press(key)
+                    else:
                         keyboard_controller.release(key)
                 except Exception as e:
                     print(f"Error al simular la tecla: {e}")
@@ -99,7 +103,8 @@ class Application(tk.Tk):
         play_thread.start()
 
     def update_list(self, action):
-        self.action_list.insert(tk.END, f"{action[0]}: {action[1:]}")
+        action_desc = f"{action[0]}: {action[1:]}" if action[0] == 'mouse' else f"{action[0]}: {action[1]}, {action[2]}"
+        self.action_list.insert(tk.END, action_desc)
 
     def update_playback(self, index):
         if self.playback_index is not None:
@@ -118,6 +123,5 @@ class Application(tk.Tk):
             index = selection[0]
             del self.recorder.recorded_actions[index]
             self.action_list.delete(index)
-
 app = Application()
 app.mainloop()
