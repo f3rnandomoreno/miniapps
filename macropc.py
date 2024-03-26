@@ -85,28 +85,35 @@ class MouseKeyboardRecorder:
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
+        self.geometry("800x600")  # Configura el tamaño inicial de la ventana
         self.recorder = MouseKeyboardRecorder(self.update_list)
         self.create_widgets()
         self.playback_index = None
+        self.configure_grid()
 
     def create_widgets(self):
         self.record_button = tk.Button(self, text="Grabar", command=self.start_recording)
-        self.record_button.pack()
+        self.record_button.grid(row=0, column=0, sticky='nsew')
 
         self.play_button = tk.Button(self, text="Reproducir", command=self.play_recording)
-        self.play_button.pack()
+        self.play_button.grid(row=1, column=0, sticky='nsew')
 
         self.stop_play_button = tk.Button(self, text="Detener Reproducción", command=self.stop_playing)
-        self.stop_play_button.pack()
+        self.stop_play_button.grid(row=2, column=0, sticky='nsew')
 
         self.action_list = tk.Listbox(self)
-        self.action_list.pack()
-
-        self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
-        self.clear_button.pack()
+        self.action_list.grid(row=3, column=0, sticky='nsew')
 
         self.delete_button = tk.Button(self, text="Borrar acción seleccionada", command=self.delete_selected_action)
-        self.delete_button.pack()
+        self.delete_button.grid(row=4, column=0, sticky='nsew')
+
+        self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
+        self.clear_button.grid(row=5, column=0, sticky='nsew')
+
+    def configure_grid(self):
+        self.grid_columnconfigure(0, weight=1)
+        for i in range(6):
+            self.grid_rowconfigure(i, weight=1)
 
     def start_recording(self):
         self.recorder.start_recording()
