@@ -48,10 +48,10 @@ class MouseKeyboardRecorder:
         mouse_controller = mouse.Controller()
         keyboard_controller = keyboard.Controller()
 
-        for i, action in enumerate(self.recorded_actions):
+        for action in self.recorded_actions:
             if not self.playing:
                 break
-            update_playback(i)
+            update_playback(action)  # Pasar la acción en lugar del índice
             action_type, *details = action
 
             if action_type == 'mouse':
@@ -78,9 +78,10 @@ class Application(tk.Tk):
         super().__init__()
         self.geometry("800x600")
         self.recorder = MouseKeyboardRecorder(self.update_list)
-        self.create_widgets()
         self.playback_index = None
         self.configure_grid()
+        self.action_id_map = {}  # Añadir un nuevo diccionario para mapear los ID de los elementos a las acciones
+        self.create_widgets()
 
     def create_widgets(self):
         self.record_button = tk.Button(self, text="Grabar", command=self.start_recording)
@@ -132,39 +133,49 @@ class Application(tk.Tk):
         self.record_button.config(text="Grabar", command=self.start_recording)
 
     def play_recording(self):
+        self.last_action_type = None
+        self.last_parent = None
         self.recorder.play_thread = threading.Thread(target=lambda: self.recorder.play_actions(self.update_playback))
         self.recorder.play_thread.start()
 
     def update_list(self, action):
         action_type, *details = action
         if action_type != self.last_action_type:
+            self.last_parent = self.action_tree.insert('', 'end', text=action_type)
+            self.last_action_type = action_type
+        new_item = self.action_tree.insert(self.last_parent, 'end', text=action_type, values=details)
+        self.action_tree.item(self.last_parent, open=True)
+        self.action_tree.see(new_item)
+        self.action_id_map[new_item] = action
+
+    def update_playback(self, action):
+        action_type, *details = action
+        if action_type != self.last_action_type:
             # Si el tipo de acción ha cambiado, crear un nuevo elemento padre
             self.last_parent = self.action_tree.insert('', 'end', text=action_type)
             self.last_action_type = action_type
         # Insertar la acción como un elemento hijo del último elemento padre
-        self.action_tree.insert(self.last_parent, 'end', text=action_type, values=details)
+        new_item = self.action_tree.insert(self.last_parent, 'end', text=action_type, values=details)
         # Desplegar el elemento padre
         self.action_tree.item(self.last_parent, open=True)
-
-    def update_playback(self, index):
-        if self.playback_index is not None:
-            self.action_list.itemconfig(self.playback_index, {'bg': 'white'})
-        self.playback_index = index
-        self.action_list.itemconfig(index, {'bg': 'lightgreen'})
-        self.action_list.see(index)
+        # Desplazarse hacia abajo hasta el nuevo elemento
+        self.action_tree.see(new_item)
 
     def clear_actions(self):
         self.recorder.recorded_actions.clear()
-        self.action_list.delete(0, tk.END)
+        for item in self.action_tree.get_children():
+            self.action_tree.delete(item)
+        self.action_id_map.clear()  # Clear the action_id_map as well
         self.playback_index = None
 
     def delete_selected_action(self, event=None):
-        selections = self.action_list.curselection()
-        # Ordenar las selecciones en orden inverso para evitar problemas de índice
-        selections = sorted(selections, reverse=True)
-        for index in selections:
-            del self.recorder.recorded_actions[index]
-            self.action_list.delete(index)        
+        selected_items = self.action_tree.selection()
+        for item_id in selected_items:
+            if item_id in self.action_id_map:
+                action = self.action_id_map[item_id]
+                self.recorder.recorded_actions.remove(action)
+                self.action_tree.delete(item_id)
+                del self.action_id_map[item_id]
         self.playback_index = None
 
 app = Application()
