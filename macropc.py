@@ -80,17 +80,17 @@ class MouseKeyboardRecorder:
                 x, y, button, pressed = details
                 time.sleep(recorded_delay)
                 mouse_controller.position = (x, y)
-                if pressed:  # Si se debe presionar el botón
-                    if button == 'Button.left':
-                        mouse_controller.press(mouse.Button.left)
-                    elif button == 'Button.right':
-                        mouse_controller.press(mouse.Button.right)
-                    # Agrega aquí más botones si es necesario
-                else:  # Si se debe liberar el botón
-                    if button == 'Button.left':
-                        mouse_controller.release(mouse.Button.left)
-                    elif button == 'Button.right':
-                        mouse_controller.release(mouse.Button.right)
+                try:
+                    if pressed:  # Si se debe presionar el botón
+                        if button == 'Button.left':
+                            mouse_controller.press(mouse.Button.left)
+                            mouse_controller.release(mouse.Button.left)
+                        elif button == 'Button.right':
+                            mouse_controller.press(mouse.Button.right)
+                            mouse_controller.release(mouse.Button.right)
+                except Exception as e:
+                    print(f"Error en la acción del ratón: {e}")
+
 
             elif action_type == 'keyboard':
                 press_or_release, key = details  # Cambio aquí
