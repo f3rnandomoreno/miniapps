@@ -50,6 +50,7 @@ class MouseKeyboardRecorder:
 
     def start_recording(self):
         self.recording = True
+        self.last_action_time = time.time()  # Establecer el tiempo inicial de grabación
         self.mouse_listener = mouse.Listener(on_click=self.on_click)
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.mouse_listener.start()
@@ -76,14 +77,20 @@ class MouseKeyboardRecorder:
             action_type, *details, recorded_delay = action
 
             if action_type == 'mouse':
-                x, y, button, pressed = details  # Cambio aquí
-                time.sleep(recorded_delay)  # Utilizar el tiempo registrado
+                x, y, button, pressed = details
+                time.sleep(recorded_delay)
                 mouse_controller.position = (x, y)
-                button_action = eval('mouse.' + button)
-                if pressed:  # Cambio aquí
-                    mouse_controller.press(button_action)
-                else:
-                    mouse_controller.release(button_action)
+                if pressed:  # Si se debe presionar el botón
+                    if button == 'Button.left':
+                        mouse_controller.press(mouse.Button.left)
+                    elif button == 'Button.right':
+                        mouse_controller.press(mouse.Button.right)
+                    # Agrega aquí más botones si es necesario
+                else:  # Si se debe liberar el botón
+                    if button == 'Button.left':
+                        mouse_controller.release(mouse.Button.left)
+                    elif button == 'Button.right':
+                        mouse_controller.release(mouse.Button.right)
 
             elif action_type == 'keyboard':
                 press_or_release, key = details  # Cambio aquí
@@ -96,6 +103,7 @@ class MouseKeyboardRecorder:
                         keyboard_controller.release(key_action)
                 except Exception as e:
                     print(f"Error al simular la tecla: {e}")
+
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -157,13 +165,22 @@ class Application(tk.Tk):
 
     def delete_selected_action(self, event=None):
         selections = self.action_list.curselection()
-        # Ordenar las selecciones en orden inverso para evitar problemas de índice
         selections = sorted(selections, reverse=True)
         for index in selections:
             del self.recorder.recorded_actions[index]
             self.action_list.delete(index)
         if self.playback_index is not None and index <= self.playback_index:
             self.playback_index = None
+
+    def update_list(self, action):
+        action_type = action[0]
+        action_details = action[1:-1]
+        action_delay = action[-1]
+        if action_type == 'mouse':
+            action_desc = f"Mouse {action_details} with delay {action_delay}"
+        else:
+            action_desc = f"Keyboard {action_details} with delay {action_delay}"
+        self.action_list.insert(tk.END, action_desc)
 
 app = Application()
 app.mainloop()
