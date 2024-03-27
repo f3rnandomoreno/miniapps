@@ -148,8 +148,17 @@ class Application(tk.Tk):
         self.recorder.play_thread.start()
 
     def update_list(self, action):
-        action_desc = f"{action[0]}: {action[1:]}" if action[0] == 'mouse' else f"{action[0]}: {action[1]}, {action[2]}"
+        action_type, *action_details, action_delay = action
+        formatted_delay = "{:.4f}".format(action_delay)  # Esto formateará el delay a 4 dígitos decimales
+        if action_type == 'mouse':
+            x, y, button, pressed = action_details
+            action_desc = f"Mouse ({x}, {y}, {button}, {pressed}) with delay {formatted_delay} seconds"
+        elif action_type == 'keyboard':
+            press_or_release, key = action_details
+            action_desc = f"Keyboard ({press_or_release}, {key}) with delay {formatted_delay} seconds"
         self.action_list.insert(tk.END, action_desc)
+
+
 
     def update_playback(self, index):
         if self.playback_index is not None:
@@ -170,17 +179,7 @@ class Application(tk.Tk):
             del self.recorder.recorded_actions[index]
             self.action_list.delete(index)
         if self.playback_index is not None and index <= self.playback_index:
-            self.playback_index = None
-
-    def update_list(self, action):
-        action_type = action[0]
-        action_details = action[1:-1]
-        action_delay = action[-1]
-        if action_type == 'mouse':
-            action_desc = f"Mouse {action_details} with delay {action_delay}"
-        else:
-            action_desc = f"Keyboard {action_details} with delay {action_delay}"
-        self.action_list.insert(tk.END, action_desc)
+            self.playback_index = None  
 
 app = Application()
 app.mainloop()
