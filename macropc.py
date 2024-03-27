@@ -33,7 +33,7 @@ class MouseKeyboardRecorder:
                 delay = current_time - self.last_action_time
             else:
                 delay = 0
-            self.recorded_actions.append(('keyboard', 'press', key, None, delay))
+            self.recorded_actions.append(('keyboard', 'press', key, delay))
             self.update_callback(self.recorded_actions[-1])
             self.last_action_time = current_time  # Actualizar el tiempo de la última acción
 
@@ -44,7 +44,7 @@ class MouseKeyboardRecorder:
                 delay = current_time - self.last_action_time
             else:
                 delay = 0
-            self.recorded_actions.append(('keyboard', 'release', key, None, delay))
+            self.recorded_actions.append(('keyboard', 'release', key, delay))
             self.update_callback(self.recorded_actions[-1])
             self.last_action_time = current_time  # Actualizar el tiempo de la última acción
 
@@ -76,25 +76,26 @@ class MouseKeyboardRecorder:
             action_type, *details, recorded_delay = action
 
             if action_type == 'mouse':
-                x, y, button, pressed, _ = details
+                x, y, button, pressed = details  # Cambio aquí
                 time.sleep(recorded_delay)  # Utilizar el tiempo registrado
                 mouse_controller.position = (x, y)
-                if pressed:
-                    mouse_controller.press(eval('mouse.' + button))
+                button_action = eval('mouse.' + button)
+                if pressed:  # Cambio aquí
+                    mouse_controller.press(button_action)
                 else:
-                    mouse_controller.release(eval('mouse.' + button))
+                    mouse_controller.release(button_action)
 
             elif action_type == 'keyboard':
-                press_or_release, key, _ = details
+                press_or_release, key = details  # Cambio aquí
                 time.sleep(recorded_delay)  # Utilizar el tiempo registrado
                 try:
+                    key_action = eval(key) if isinstance(key, str) else key
                     if press_or_release == 'press':
-                        keyboard_controller.press(key)
+                        keyboard_controller.press(key_action)
                     else:
-                        keyboard_controller.release(key)
+                        keyboard_controller.release(key_action)
                 except Exception as e:
                     print(f"Error al simular la tecla: {e}")
-
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
