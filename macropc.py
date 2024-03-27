@@ -12,21 +12,41 @@ class MouseKeyboardRecorder:
         self.mouse_listener = None
         self.keyboard_listener = None
         self.play_thread = None
+        self.start_time = None  # Tiempo de inicio de la reproducción
+        self.last_action_time = None  # Tiempo de la última acción
 
     def on_click(self, x, y, button, pressed):
         if self.recording:
-            self.recorded_actions.append(('mouse', x, y, str(button), pressed))
+            current_time = time.time()
+            if self.last_action_time is not None:
+                delay = current_time - self.last_action_time
+            else:
+                delay = 0
+            self.recorded_actions.append(('mouse', x, y, str(button), pressed, delay))
             self.update_callback(self.recorded_actions[-1])
+            self.last_action_time = current_time  # Actualizar el tiempo de la última acción
 
     def on_press(self, key):
         if self.recording:
-            self.recorded_actions.append(('keyboard', 'press', key))
+            current_time = time.time()
+            if self.last_action_time is not None:
+                delay = current_time - self.last_action_time
+            else:
+                delay = 0
+            self.recorded_actions.append(('keyboard', 'press', key, None, delay))
             self.update_callback(self.recorded_actions[-1])
+            self.last_action_time = current_time  # Actualizar el tiempo de la última acción
 
     def on_release(self, key):
         if self.recording:
-            self.recorded_actions.append(('keyboard', 'release', key))
+            current_time = time.time()
+            if self.last_action_time is not None:
+                delay = current_time - self.last_action_time
+            else:
+                delay = 0
+            self.recorded_actions.append(('keyboard', 'release', key, None, delay))
             self.update_callback(self.recorded_actions[-1])
+            self.last_action_time = current_time  # Actualizar el tiempo de la última acción
 
     def start_recording(self):
         self.recording = True
@@ -47,14 +67,17 @@ class MouseKeyboardRecorder:
         mouse_controller = mouse.Controller()
         keyboard_controller = keyboard.Controller()
 
+        self.start_time = time.time()  # Guardar el tiempo de inicio de la reproducción
+
         for i, action in enumerate(self.recorded_actions):
             if not self.playing:
                 break
             update_playback(i)
-            action_type, *details = action
+            action_type, *details, recorded_delay = action
 
             if action_type == 'mouse':
-                x, y, button, pressed = details
+                x, y, button, pressed, _ = details
+                time.sleep(recorded_delay)  # Utilizar el tiempo registrado
                 mouse_controller.position = (x, y)
                 if pressed:
                     mouse_controller.press(eval('mouse.' + button))
@@ -62,7 +85,8 @@ class MouseKeyboardRecorder:
                     mouse_controller.release(eval('mouse.' + button))
 
             elif action_type == 'keyboard':
-                press_or_release, key = details
+                press_or_release, key, _ = details
+                time.sleep(recorded_delay)  # Utilizar el tiempo registrado
                 try:
                     if press_or_release == 'press':
                         keyboard_controller.press(key)
@@ -70,7 +94,6 @@ class MouseKeyboardRecorder:
                         keyboard_controller.release(key)
                 except Exception as e:
                     print(f"Error al simular la tecla: {e}")
-            time.sleep(0.1)
 
 class Application(tk.Tk):
     def __init__(self):
