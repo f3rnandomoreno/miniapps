@@ -33,8 +33,7 @@ class MouseKeyboardRecorder:
         if self.recording:
             current_time = time.time()
             delay = current_time - self.last_action_time if self.last_action_time is not None else 0
-            key_data = key.vk if hasattr(key, 'vk') else key.char
-            self.recorded_actions.append(('keyboard', 'press', key_data, delay))
+            self.recorded_actions.append(('keyboard', 'release', key, delay))
             self.update_callback(self.recorded_actions[-1])
             self.last_action_time = current_time
 
@@ -93,16 +92,14 @@ class MouseKeyboardRecorder:
                 except Exception as e:
                     print(f"Error en la acción del ratón: {e}")
 
-
             elif action_type == 'keyboard':
-                press_or_release, key = details  # Cambio aquí
-                time.sleep(recorded_delay)  # Utilizar el tiempo registrado
+                press_or_release, key = details
+                time.sleep(recorded_delay)
                 try:
-                    key_action = eval(key) if isinstance(key, str) else key
                     if press_or_release == 'press':
-                        keyboard_controller.press(key_action)
+                        keyboard_controller.press(key)
                     else:
-                        keyboard_controller.release(key_action)
+                        keyboard_controller.release(key)
                 except Exception as e:
                     print(f"Error al simular la tecla: {e}")
     
