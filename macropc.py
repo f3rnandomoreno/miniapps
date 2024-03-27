@@ -158,8 +158,6 @@ class Application(tk.Tk):
             action_desc = f"Keyboard ({press_or_release}, {key}) with delay {formatted_delay} seconds"
         self.action_list.insert(tk.END, action_desc)
 
-
-
     def update_playback(self, index):
         if self.playback_index is not None:
             self.action_list.itemconfig(self.playback_index, {'bg': 'white'})
