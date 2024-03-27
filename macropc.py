@@ -1,7 +1,10 @@
 import tkinter as tk
+from tkinter import simpledialog
 from pynput import mouse, keyboard
 import threading
 import time
+import json
+import os
 
 class MouseKeyboardRecorder:
     def __init__(self, update_callback):
@@ -103,32 +106,59 @@ class MouseKeyboardRecorder:
                         keyboard_controller.release(key_action)
                 except Exception as e:
                     print(f"Error al simular la tecla: {e}")
+    
+    def save_action_group(self, name, action_group):
+        with open(f'{name}.json', 'w') as file:
+            json.dump(action_group, file)
+    
+    def load_action_group(self, name):
+        with open(f'{name}.json', 'r') as file:
+            self.recorded_actions = json.load(file)
 
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.geometry("800x600")
+        self.geometry("1024x600")
+        self.title("Grabador de Acciones de Teclado y Ratón")
         self.recorder = MouseKeyboardRecorder(self.update_list)
+        self.action_groups = {}
         self.create_widgets()
         self.playback_index = None
         self.configure_grid()
+        self.load_action_groups()
 
     def create_widgets(self):
-        self.record_button = tk.Button(self, text="Grabar", command=self.start_recording)
-        self.record_button.grid(row=0, column=0, sticky='nsew')
+        # Lista de grupos
+        self.group_list_label = tk.Label(self, text="Grupos de Acciones")
+        self.group_list_label.grid(row=0, column=0, sticky='nsew')
+        
+        self.group_list = tk.Listbox(self, selectmode=tk.SINGLE)
+        self.group_list.grid(row=1, column=0, rowspan=4, sticky='nsew')
+        self.group_list.bind('<<ListboxSelect>>', self.load_selected_group)
+
+        self.save_group_button = tk.Button(self, text="Guardar Grupo Actual", command=self.save_action_group)
+        self.save_group_button.grid(row=5, column=0, sticky='nsew')
+
+        # Controles de grabación y reproducción
+        self.record_button = tk.Button(self, text="Iniciar Grabación", command=self.start_recording)
+        self.record_button.grid(row=0, column=1, sticky='nsew')
+
+        self.stop_button = tk.Button(self, text="Detener Grabación", command=self.stop_recording)
+        self.stop_button.grid(row=1, column=1, sticky='nsew')
 
         self.play_button = tk.Button(self, text="Reproducir", command=self.play_recording)
-        self.play_button.grid(row=1, column=0, sticky='nsew')
+        self.play_button.grid(row=2, column=1, sticky='nsew')
+
+        # Lista de acciones
+        self.action_list_label = tk.Label(self, text="Acciones Grabadas")
+        self.action_list_label.grid(row=3, column=1, sticky='nsew')
 
         self.action_list = tk.Listbox(self, selectmode=tk.EXTENDED)
-        self.action_list.grid(row=3, column=0, sticky='nsew')
+        self.action_list.grid(row=4, column=1, sticky='nsew')
         self.action_list.bind('<Delete>', self.delete_selected_action)
 
-        self.clear_button = tk.Button(self, text="Borrar todas las acciones", command=self.clear_actions)
-        self.clear_button.grid(row=5, column=0, sticky='nsew')
-
-        self.delete_button = tk.Button(self, text="Borrar acción seleccionada", command=self.delete_selected_action)
-        self.delete_button.grid(row=4, column=0, sticky='nsew')
+        self.clear_button = tk.Button(self, text="Borrar Todas las Acciones", command=self.clear_actions)
+        self.clear_button.grid(row=5, column=1, sticky='nsew')
 
     def configure_grid(self):
         self.grid_columnconfigure(0, weight=1)
@@ -177,7 +207,28 @@ class Application(tk.Tk):
             del self.recorder.recorded_actions[index]
             self.action_list.delete(index)
         if self.playback_index is not None and index <= self.playback_index:
-            self.playback_index = None  
+            self.playback_index = None
+    def save_action_group(self):
+        name = simpledialog.askstring("Guardar Grupo", "Nombre del grupo de acciones:", parent=self)
+        if name:
+            self.action_groups[name] = self.recorder.recorded_actions.copy()
+            self.recorder.save_action_group(name, self.recorder.recorded_actions)
+            self.group_list.insert(tk.END, name)
+
+    def load_selected_group(self, event=None):
+        selection = self.group_list.curselection()
+        if selection:
+            name = self.group_list.get(selection[0])
+            self.recorder.load_action_group(name)
+            self.action_list.delete(0, tk.END)
+            for action in self.recorder.recorded_actions:
+                self.update_action_list(action)
+
+    def load_action_groups(self):
+        for file in os.listdir():
+            if file.endswith('.json'):
+                name = file.replace('.json', '')
+                self.group_list.insert(tk.END, name)  
 
 app = Application()
 app.mainloop()
