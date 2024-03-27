@@ -32,13 +32,12 @@ class MouseKeyboardRecorder:
     def on_press(self, key):
         if self.recording:
             current_time = time.time()
-            if self.last_action_time is not None:
-                delay = current_time - self.last_action_time
-            else:
-                delay = 0
-            self.recorded_actions.append(('keyboard', 'press', key, delay))
+            delay = current_time - self.last_action_time if self.last_action_time is not None else 0
+            key_data = key.vk if hasattr(key, 'vk') else key.char
+            self.recorded_actions.append(('keyboard', 'press', key_data, delay))
             self.update_callback(self.recorded_actions[-1])
-            self.last_action_time = current_time  # Actualizar el tiempo de la última acción
+            self.last_action_time = current_time
+
 
     def on_release(self, key):
         if self.recording:
@@ -108,12 +107,37 @@ class MouseKeyboardRecorder:
                     print(f"Error al simular la tecla: {e}")
     
     def save_action_group(self, name, action_group):
+        # Convertir los objetos Key a string antes de guardar
+        def default(o):
+            if isinstance(o, keyboard.Key):
+                return {'type': 'Key', 'key': o.name}
+            elif isinstance(o, keyboard.KeyCode):
+                return {'type': 'KeyCode', 'char': o.char, 'vk': o.vk}
+            raise TypeError(f'Object of type {o.__class__.__name__} is not JSON serializable')
+
+
         with open(f'{name}.json', 'w') as file:
-            json.dump(action_group, file)
+            json.dump(action_group, file, default=default)
+
     
     def load_action_group(self, name):
-        with open(f'{name}.json', 'r') as file:
-            self.recorded_actions = json.load(file)
+        try:
+            with open(f'{name}.json', 'r') as file:
+                self.recorded_actions = json.load(file)
+                for action in self.recorded_actions:
+                    if action.get('type') == 'Key':
+                        key = keyboard.Key[action['key']]
+                    elif action.get('type') == 'KeyCode':
+                        if action.get('char'):
+                            key = keyboard.KeyCode(char=action['char'])
+                        else:
+                            key = keyboard.KeyCode.from_vk(action['vk'])
+                    self.recorded_actions.append(('keyboard', 'press', key, delay))
+
+        except Exception as e:
+            print(f"Error al cargar el grupo de acciones: {e}")
+
+
 
 class Application(tk.Tk):
     def __init__(self):
@@ -208,12 +232,15 @@ class Application(tk.Tk):
             self.action_list.delete(index)
         if self.playback_index is not None and index <= self.playback_index:
             self.playback_index = None
+    
     def save_action_group(self):
         name = simpledialog.askstring("Guardar Grupo", "Nombre del grupo de acciones:", parent=self)
         if name:
             self.action_groups[name] = self.recorder.recorded_actions.copy()
             self.recorder.save_action_group(name, self.recorder.recorded_actions)
             self.group_list.insert(tk.END, name)
+
+
 
     def load_selected_group(self, event=None):
         selection = self.group_list.curselection()
@@ -222,7 +249,7 @@ class Application(tk.Tk):
             self.recorder.load_action_group(name)
             self.action_list.delete(0, tk.END)
             for action in self.recorder.recorded_actions:
-                self.update_action_list(action)
+                self.update_list(action)
 
     def load_action_groups(self):
         for file in os.listdir():
