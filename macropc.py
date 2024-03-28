@@ -132,14 +132,22 @@ class Application(tk.Tk):
         self.configure_grid()
         self.load_action_groups()
 
-    def create_widgets(self):
-        # Lista de grupos
+    def create_widgets(self):         
+        # Barra de búsqueda
+        self.search_var = tk.StringVar()
+        self.search_bar = tk.Entry(self, textvariable=self.search_var)
+        self.search_bar.grid(row=0, column=0, sticky='nsew')
+        self.search_bar.bind('<KeyRelease>', self.on_search)  # Evento para actualizar la lista mientras escribes
+
+        # Etiqueta de lista de grupos
         self.group_list_label = tk.Label(self, text="Grupos de Acciones")
-        self.group_list_label.grid(row=0, column=0, sticky='nsew')
-        
+        self.group_list_label.grid(row=1, column=0, sticky='nsew')
+
+        # Lista de grupos actualizada
         self.group_list = tk.Listbox(self, selectmode=tk.SINGLE)
-        self.group_list.grid(row=1, column=0, rowspan=4, sticky='nsew')
+        self.group_list.grid(row=2, column=0, rowspan=4, sticky='nsew')
         self.group_list.bind('<<ListboxSelect>>', self.load_selected_group)
+        self.group_list.bind('<Return>', self.play_selected_group)  # Evento para reproducir al presionar Enter
 
         self.save_group_button = tk.Button(self, text="Guardar Grupo Actual", command=self.save_action_group)
         self.save_group_button.grid(row=5, column=0, sticky='nsew')
@@ -170,6 +178,27 @@ class Application(tk.Tk):
         self.grid_columnconfigure(1, weight=3)
         for i in range(6):
             self.grid_rowconfigure(i, weight=1)
+
+    # Función para actualizar la lista de grupos basada en la búsqueda
+    def on_search(self, event=None):
+        search_term = self.search_var.get().lower()
+        self.group_list.delete(0, tk.END)  # Limpia la lista antes de la búsqueda
+
+        # Vamos a buscar dentro de los nombres de archivo guardados en lugar de un diccionario
+        # porque no se estaba llenando el diccionario en ningún otro lugar del código.
+        for file in os.listdir():
+            if file.endswith('.auto'):
+                group_name = file.replace('.auto', '')
+                if search_term in group_name.lower():
+                    self.group_list.insert(tk.END, group_name)
+    
+    # Función para reproducir el grupo seleccionado
+    def play_selected_group(self, event=None):
+        selection = self.group_list.curselection()
+        if selection:
+            name = self.group_list.get(selection[0])
+            self.recorder.load_action_group(name)
+            self.play_recording()
 
     def start_recording(self):
         self.recorder.start_recording()
@@ -221,6 +250,7 @@ class Application(tk.Tk):
             self.recorder.save_action_group(name, self.recorder.recorded_actions)
             self.group_list.insert(tk.END, name)  # Agrega el nuevo grupo a la lista de grupos
             self.action_groups[name] = self.recorder.recorded_actions.copy()  # Almacena las acciones grabadas en el diccionario
+            self.on_search()  # Actualiza la lista de búsqueda
 
     def load_action_group(self, name):
         try:
