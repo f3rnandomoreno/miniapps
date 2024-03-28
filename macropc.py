@@ -203,6 +203,7 @@ class Application(tk.Tk):
     def start_recording(self):
         self.recorder.start_recording()
         self.record_button.config(text="Detener Grabación", command=self.stop_recording)
+        self.iconify()
 
     def stop_recording(self):
         self.recorder.stop_recording()
