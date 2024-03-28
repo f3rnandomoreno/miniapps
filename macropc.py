@@ -213,6 +213,8 @@ class Application(tk.Tk):
         self.playback_index = 0  # Restablece el índice de reproducción al inicio
         self.recorder.play_thread = threading.Thread(target=lambda: self.recorder.play_actions(self.update_playback))
         self.recorder.play_thread.start()
+        self.iconify()
+
 
     def update_list(self, action):
         action_type, *action_details, action_delay = action
