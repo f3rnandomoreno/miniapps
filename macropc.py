@@ -3,7 +3,6 @@ from tkinter import simpledialog
 from pynput import mouse, keyboard
 import threading
 import time
-import json
 import os
 import pickle
 
@@ -217,10 +216,11 @@ class Application(tk.Tk):
             self.playback_index = None
     
     def save_action_group(self):
-        # Solicita al usuario un nombre para el grupo de acciones
         name = simpledialog.askstring("Guardar Grupo", "Nombre del grupo de acciones:", parent=self)
         if name:  # Verifica si el usuario proporcionó un nombre
             self.recorder.save_action_group(name, self.recorder.recorded_actions)
+            self.group_list.insert(tk.END, name)  # Agrega el nuevo grupo a la lista de grupos
+            self.action_groups[name] = self.recorder.recorded_actions.copy()  # Almacena las acciones grabadas en el diccionario
 
     def load_action_group(self, name):
         try:
