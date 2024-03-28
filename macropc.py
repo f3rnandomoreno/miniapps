@@ -210,6 +210,7 @@ class Application(tk.Tk):
         self.record_button.config(text="Grabar", command=self.start_recording)
 
     def play_recording(self):
+        self.playback_index = 0  # Restablece el índice de reproducción al inicio
         self.recorder.play_thread = threading.Thread(target=lambda: self.recorder.play_actions(self.update_playback))
         self.recorder.play_thread.start()
 
