@@ -111,10 +111,11 @@ class MouseKeyboardRecorder:
     
     def load_action_group(self, name):
         try:
-            with open(f'{name}.auto', 'rb') as file:  # Cargar desde un archivo binario
+            with open(f'{name}.auto', 'rb') as file:
                 action_group = pickle.load(file)
-            self.recorded_actions = action_group
-            # No necesitamos reconstruir los objetos de teclado aquí porque pickle ya maneja eso
+            # Limpiar la lista de acciones actual antes de cargar las nuevas
+            self.recorded_actions.clear()
+            self.recorded_actions.extend(action_group)  # Cargar las nuevas acciones
         except Exception as e:
             print(f"Error al cargar el grupo de acciones: {e}")
 
@@ -215,10 +216,11 @@ class Application(tk.Tk):
         if self.playback_index is not None and index <= self.playback_index:
             self.playback_index = None
     
-    def save_action_group(self, name, action_group):
-        # No necesitamos una función de default para pickle
-        with open(f'{name}.auto', 'wb') as file:  # Usamos 'wb' para escribir en modo binario
-            pickle.dump(action_group, file)
+    def save_action_group(self):
+        # Solicita al usuario un nombre para el grupo de acciones
+        name = simpledialog.askstring("Guardar Grupo", "Nombre del grupo de acciones:", parent=self)
+        if name:  # Verifica si el usuario proporcionó un nombre
+            self.recorder.save_action_group(name, self.recorder.recorded_actions)
 
     def load_action_group(self, name):
         try:
