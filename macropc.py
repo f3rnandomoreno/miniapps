@@ -5,6 +5,7 @@ import threading
 import time
 import json
 import os
+import pickle
 
 class MouseKeyboardRecorder:
     def __init__(self, update_callback):
@@ -33,7 +34,7 @@ class MouseKeyboardRecorder:
         if self.recording:
             current_time = time.time()
             delay = current_time - self.last_action_time if self.last_action_time is not None else 0
-            self.recorded_actions.append(('keyboard', 'release', key, delay))
+            self.recorded_actions.append(('keyboard', 'press', key, delay))  # Cambiado 'release' a 'press'
             self.update_callback(self.recorded_actions[-1])
             self.last_action_time = current_time
 
@@ -104,33 +105,16 @@ class MouseKeyboardRecorder:
                     print(f"Error al simular la tecla: {e}")
     
     def save_action_group(self, name, action_group):
-        # Convertir los objetos Key a string antes de guardar
-        def default(o):
-            if isinstance(o, keyboard.Key):
-                return {'type': 'Key', 'key': o.name}
-            elif isinstance(o, keyboard.KeyCode):
-                return {'type': 'KeyCode', 'char': o.char, 'vk': o.vk}
-            raise TypeError(f'Object of type {o.__class__.__name__} is not JSON serializable')
-
-
-        with open(f'{name}.json', 'w') as file:
-            json.dump(action_group, file, default=default)
+        with open(f'{name}.auto', 'wb') as file:  # Guardar en formato binario con extensión .auto
+            pickle.dump(action_group, file)
 
     
     def load_action_group(self, name):
         try:
-            with open(f'{name}.json', 'r') as file:
-                self.recorded_actions = json.load(file)
-                for action in self.recorded_actions:
-                    if action.get('type') == 'Key':
-                        key = keyboard.Key[action['key']]
-                    elif action.get('type') == 'KeyCode':
-                        if action.get('char'):
-                            key = keyboard.KeyCode(char=action['char'])
-                        else:
-                            key = keyboard.KeyCode.from_vk(action['vk'])
-                    self.recorded_actions.append(('keyboard', 'press', key, delay))
-
+            with open(f'{name}.auto', 'rb') as file:  # Cargar desde un archivo binario
+                action_group = pickle.load(file)
+            self.recorded_actions = action_group
+            # No necesitamos reconstruir los objetos de teclado aquí porque pickle ya maneja eso
         except Exception as e:
             print(f"Error al cargar el grupo de acciones: {e}")
 
@@ -183,6 +167,7 @@ class Application(tk.Tk):
 
     def configure_grid(self):
         self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=3)
         for i in range(6):
             self.grid_rowconfigure(i, weight=1)
 
@@ -230,29 +215,50 @@ class Application(tk.Tk):
         if self.playback_index is not None and index <= self.playback_index:
             self.playback_index = None
     
-    def save_action_group(self):
-        name = simpledialog.askstring("Guardar Grupo", "Nombre del grupo de acciones:", parent=self)
-        if name:
-            self.action_groups[name] = self.recorder.recorded_actions.copy()
-            self.recorder.save_action_group(name, self.recorder.recorded_actions)
-            self.group_list.insert(tk.END, name)
+    def save_action_group(self, name, action_group):
+        # No necesitamos una función de default para pickle
+        with open(f'{name}.auto', 'wb') as file:  # Usamos 'wb' para escribir en modo binario
+            pickle.dump(action_group, file)
 
+    def load_action_group(self, name):
+        try:
+            with open(f'{name}.auto', 'rb') as file:  # Usamos 'rb' para leer en modo binario
+                action_group = pickle.load(file)
+                
+            self.recorded_actions = []
+            for action in action_group:
+                action_type, *details, delay = action
+                if action_type == 'keyboard':
+                    press_or_release, key = details
+                    if isinstance(key, dict):
+                        # Reconstruimos el objeto Key o KeyCode
+                        if key['type'] == 'Key':
+                            key = keyboard.Key[key['key']]
+                        elif key['type'] == 'KeyCode':
+                            char = key.get('char')
+                            vk = key.get('vk')
+                            key = keyboard.KeyCode(char=char, vk=vk)
+                    # Aquí asumimos que el formato de acción es ('keyboard', 'press/release', key, delay)
+                    self.recorded_actions.append((action_type, press_or_release, key, delay))
 
+        except Exception as e:
+            print(f"Error al cargar el grupo de acciones: {e}")
 
     def load_selected_group(self, event=None):
         selection = self.group_list.curselection()
         if selection:
             name = self.group_list.get(selection[0])
             self.recorder.load_action_group(name)
-            self.action_list.delete(0, tk.END)
+            self.action_list.delete(0, tk.END)  # Limpiar la lista de acciones actual
+            # Actualizar la lista de acciones con las nuevas acciones cargadas
             for action in self.recorder.recorded_actions:
                 self.update_list(action)
 
     def load_action_groups(self):
         for file in os.listdir():
-            if file.endswith('.json'):
-                name = file.replace('.json', '')
-                self.group_list.insert(tk.END, name)  
+            if file.endswith('.auto'):  # Cambiamos de .json a .auto
+                name = file.replace('.auto', '')  # Aquí también
+                self.group_list.insert(tk.END, name) 
 
 app = Application()
 app.mainloop()
