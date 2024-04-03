@@ -137,7 +137,8 @@ class Application(tk.Tk):
         self.search_var = tk.StringVar()
         self.search_bar = tk.Entry(self, textvariable=self.search_var)
         self.search_bar.grid(row=0, column=0, sticky='nsew')
-        self.search_bar.bind('<KeyRelease>', self.on_search)  # Evento para actualizar la lista mientras escribes
+        self.search_bar.bind('<KeyRelease>', self.on_search)  # Evento para actualizar la lista mientras escribes        
+        self.search_bar.bind('<Return>', self.execute_first_item)  # Evento para ejecutar el primer elemento
 
         # Etiqueta de lista de grupos
         self.group_list_label = tk.Label(self, text="Grupos de Acciones")
@@ -185,6 +186,12 @@ class Application(tk.Tk):
         for i in range(6):
             self.grid_rowconfigure(i, weight=1)
 
+    # Función para ejecutar el primer elemento de la lista
+    def execute_first_item(self, event=None):
+        if self.group_list.size() > 0:  # Verificar si hay elementos en la lista
+            self.group_list.selection_set(0)  # Seleccionar el primer elemento
+            self.play_selected_group()  # Ejecutar el grupo seleccionado
+            
     # Función para actualizar la lista de grupos basada en la búsqueda
     def on_search(self, event=None):
         search_term = self.search_var.get().lower()
