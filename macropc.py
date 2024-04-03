@@ -222,7 +222,12 @@ class Application(tk.Tk):
     def start_recording(self):
         self.recorder.start_recording()
         self.record_button.config(text="Detener Grabación", command=self.stop_recording)
-        self.iconify()
+        # solo iconify cuando las notas están vacías
+        if not self.notes_text.get("1.0", tk.END).strip():
+            self.iconify()
+        else:
+            # maximizar la ventana si las notas no están vacías al maximo
+            self.state('zoomed')
 
     def stop_recording(self):
         self.recorder.stop_recording()
@@ -232,7 +237,11 @@ class Application(tk.Tk):
         self.playback_index = 0  # Restablece el índice de reproducción al inicio
         self.recorder.play_thread = threading.Thread(target=lambda: self.recorder.play_actions(self.update_playback))
         self.recorder.play_thread.start()
-        self.iconify()
+        if not self.notes_text.get("1.0", tk.END).strip():
+            self.iconify()
+        else:
+            # maximizar la ventana si las notas no están vacías al maximo
+            self.state('zoomed')
 
 
     def update_list(self, action):
