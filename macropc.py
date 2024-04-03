@@ -158,6 +158,7 @@ class Application(tk.Tk):
         self.notes_label.grid(row=6, column=0, sticky='nsew')
         self.notes_text = tk.Text(self, height=5)
         self.notes_text.grid(row=7, column=0, sticky='nsew')
+        self.notes_text.bind('<Control-Return>', self.play_selected_group)  # Evento para reproducir al presionar Enter
 
         # Controles de grabación y reproducción
         self.record_button = tk.Button(self, text="Iniciar Grabación", command=self.start_recording)
@@ -205,6 +206,10 @@ class Application(tk.Tk):
                 group_name = file.replace('.auto', '')
                 if search_term in group_name.lower():
                     self.group_list.insert(tk.END, group_name)
+
+        if self.group_list.size() > 0:
+            self.group_list.selection_set(0)  # Selecciona automáticamente el primer elemento
+            self.load_selected_group()
     
     # Función para reproducir el grupo seleccionado
     def play_selected_group(self, event=None):
@@ -316,6 +321,9 @@ class Application(tk.Tk):
             if file.endswith('.auto'):  # Cambiamos de .json a .auto
                 name = file.replace('.auto', '')  # Aquí también
                 self.group_list.insert(tk.END, name) 
+        if self.group_list.size() > 0:
+            self.group_list.selection_set(0)  # Selecciona automáticamente el primer elemento
+            self.load_selected_group()
 
 app = Application()
 app.mainloop()
