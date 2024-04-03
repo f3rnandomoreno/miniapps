@@ -190,8 +190,9 @@ class Application(tk.Tk):
     def execute_first_item(self, event=None):
         if self.group_list.size() > 0:  # Verificar si hay elementos en la lista
             self.group_list.selection_set(0)  # Seleccionar el primer elemento
+            self.load_selected_group()
             self.play_selected_group()  # Ejecutar el grupo seleccionado
-            
+
     # Función para actualizar la lista de grupos basada en la búsqueda
     def on_search(self, event=None):
         search_term = self.search_var.get().lower()
