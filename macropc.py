@@ -152,6 +152,12 @@ class Application(tk.Tk):
         self.save_group_button = tk.Button(self, text="Guardar Grupo Actual", command=self.save_action_group)
         self.save_group_button.grid(row=5, column=0, sticky='nsew')
 
+        # Agregar TextArea para notas adicionales
+        self.notes_label = tk.Label(self, text="Notas Adicionales")
+        self.notes_label.grid(row=6, column=0, sticky='nsew')
+        self.notes_text = tk.Text(self, height=5)
+        self.notes_text.grid(row=7, column=0, sticky='nsew')
+
         # Controles de grabación y reproducción
         self.record_button = tk.Button(self, text="Iniciar Grabación", command=self.start_recording)
         self.record_button.grid(row=0, column=1, sticky='nsew')
@@ -255,12 +261,14 @@ class Application(tk.Tk):
             self.group_list.insert(tk.END, name)  # Agrega el nuevo grupo a la lista de grupos
             self.action_groups[name] = self.recorder.recorded_actions.copy()  # Almacena las acciones grabadas en el diccionario
             self.on_search()  # Actualiza la lista de búsqueda
+            # Guardar notas adicionales en un archivo .notes
+            with open(f'{name}.notes', 'w') as notes_file:
+                notes_file.write(self.notes_text.get("1.0", tk.END))
 
     def load_action_group(self, name):
         try:
             with open(f'{name}.auto', 'rb') as file:  # Usamos 'rb' para leer en modo binario
-                action_group = pickle.load(file)
-                
+                action_group = pickle.load(file)            
             self.recorded_actions = []
             for action in action_group:
                 action_type, *details, delay = action
@@ -275,7 +283,7 @@ class Application(tk.Tk):
                             vk = key.get('vk')
                             key = keyboard.KeyCode(char=char, vk=vk)
                     # Aquí asumimos que el formato de acción es ('keyboard', 'press/release', key, delay)
-                    self.recorded_actions.append((action_type, press_or_release, key, delay))
+                    self.recorded_actions.append((action_type, press_or_release, key, delay))                           
 
         except Exception as e:
             print(f"Error al cargar el grupo de acciones: {e}")
@@ -289,6 +297,11 @@ class Application(tk.Tk):
             # Actualizar la lista de acciones con las nuevas acciones cargadas
             for action in self.recorder.recorded_actions:
                 self.update_list(action)
+            # Cargar notas del archivo .notes
+            if os.path.exists(f'{name}.notes'):
+                with open(f'{name}.notes', 'r') as notes_file:
+                    self.notes_text.delete("1.0", tk.END)
+                    self.notes_text.insert("1.0", notes_file.read()) 
 
     def load_action_groups(self):
         for file in os.listdir():
