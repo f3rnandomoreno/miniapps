@@ -35,17 +35,21 @@ class CSVViewerApp:
 
         search_entry = tk.Entry(search_frame, textvariable=self.search_var)
         search_entry.pack(fill=tk.X, expand=True)
-        search_entry.bind("<KeyRelease>", self.update_listbox)
+        search_entry.bind("<KeyRelease>", self.update_text_widget)
 
-        # Crear Listbox y scrollbar
-        self.listbox = tk.Listbox(self.root, selectmode=tk.SINGLE)
-        self.listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        # Crear Text widget y scrollbar
+        self.text_widget = tk.Text(self.root, wrap=tk.NONE)
+        self.text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-        scrollbar = tk.Scrollbar(self.listbox, orient=tk.VERTICAL)
-        scrollbar.config(command=self.listbox.yview)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollbar_y = tk.Scrollbar(self.text_widget, orient=tk.VERTICAL)
+        scrollbar_y.config(command=self.text_widget.yview)
+        scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.listbox.config(yscrollcommand=scrollbar.set)
+        scrollbar_x = tk.Scrollbar(self.text_widget, orient=tk.HORIZONTAL)
+        scrollbar_x.config(command=self.text_widget.xview)
+        scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.text_widget.config(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
 
     def setup_dnd(self):
         self.root.drop_target_register(DND_FILES)
@@ -65,7 +69,7 @@ class CSVViewerApp:
                     df = df.drop_duplicates()  # Eliminar duplicados
                     self.data = df.astype(str).values.flatten().tolist()
                     self.data.sort()
-                    self.update_listbox()
+                    self.update_text_widget()
                 else:
                     raise FileNotFoundError(f"No such file: '{file_path}'")
             except Exception as e:
@@ -76,12 +80,12 @@ class CSVViewerApp:
         if file_path:
             self.load_csv(file_path)
 
-    def update_listbox(self, event=None):
+    def update_text_widget(self, event=None):
         search_term = self.search_var.get().lower()
-        self.listbox.delete(0, tk.END)
+        self.text_widget.delete(1.0, tk.END)
         for line in self.data:
             if search_term in line.lower():
-                self.listbox.insert(tk.END, line)
+                self.text_widget.insert(tk.END, line + '\n')
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk()
