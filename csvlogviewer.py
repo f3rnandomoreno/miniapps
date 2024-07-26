@@ -56,6 +56,7 @@ class CSVViewerApp:
         if file_path:
             try:
                 df = pd.read_csv(file_path, header=None)
+                df = df.drop_duplicates()  # Eliminar duplicados
                 self.data = df.applymap(str).values.flatten().tolist()
                 self.data.sort()
                 self.update_listbox()
