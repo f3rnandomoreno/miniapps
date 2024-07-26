@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import pandas as pd
+import os
 
 class CSVViewerApp:
     def __init__(self, root):
@@ -55,11 +56,18 @@ class CSVViewerApp:
             file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
             try:
-                df = pd.read_csv(file_path, header=None)
-                df = df.drop_duplicates()  # Eliminar duplicados
-                self.data = df.astype(str).values.flatten().tolist()
-                self.data.sort()
-                self.update_listbox()
+                # Limpiar la ruta del archivo
+                file_path = file_path.strip().replace('{', '').replace('}', '')
+
+                # Verificar si la ruta del archivo es válida
+                if os.path.isfile(file_path):
+                    df = pd.read_csv(file_path, header=None)
+                    df = df.drop_duplicates()  # Eliminar duplicados
+                    self.data = df.astype(str).values.flatten().tolist()
+                    self.data.sort()
+                    self.update_listbox()
+                else:
+                    raise FileNotFoundError(f"No such file: '{file_path}'")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load CSV file: {e}")
 
