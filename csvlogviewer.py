@@ -14,9 +14,12 @@ class CSVViewerApp:
         self.search_var = tk.StringVar()
         self.data = []
         self.filtered_data = []
+        self.search_positions = []
+        self.current_search_index = -1
 
         self.create_widgets()
         self.setup_dnd()
+        self.setup_shortcuts()
 
     def create_widgets(self):
         # Crear barra de menú
@@ -25,7 +28,7 @@ class CSVViewerApp:
 
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open CSV", command=self.load_csv)
+        file_menu.add_command(label="Open CSV", command=self.load_csv, accelerator="Ctrl+O")
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
 
@@ -73,7 +76,12 @@ class CSVViewerApp:
         self.root.drop_target_register(DND_FILES)
         self.root.dnd_bind('<<Drop>>', self.on_drop)
 
-    def load_csv(self, file_path=None):
+    def setup_shortcuts(self):
+        self.root.bind('<Control-o>', lambda event: self.load_csv())
+        self.root.bind('<Alt-Right>', self.focus_next_search_result)
+        self.root.bind('<Alt-Left>', self.focus_previous_search_result)
+
+    def load_csv(self, event=None, file_path=None):
         if not file_path:
             file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
@@ -104,7 +112,7 @@ class CSVViewerApp:
     def on_drop(self, event):
         file_path = event.data
         if file_path:
-            self.load_csv(file_path)
+            self.load_csv(file_path=file_path)
 
     def update_text_widget(self, event=None):
         filter_term = self.filter_var.get().lower()
@@ -120,6 +128,7 @@ class CSVViewerApp:
     def highlight_search_term(self, event=None):
         search_term = self.search_var.get().lower()
         self.text_widget.tag_remove("search_highlight", "1.0", tk.END)
+        self.search_positions = []
         if search_term:
             start_pos = "1.0"
             while True:
@@ -128,9 +137,30 @@ class CSVViewerApp:
                     break
                 end_pos = f"{start_pos}+{len(search_term)}c"
                 self.text_widget.tag_add("search_highlight", start_pos, end_pos)
+                self.search_positions.append(start_pos)
                 start_pos = end_pos
 
             self.text_widget.tag_config("search_highlight", background="blue", foreground="white")
+
+        self.current_search_index = -1
+
+    def focus_next_search_result(self, event=None):
+        if self.search_positions:
+            self.current_search_index = (self.current_search_index + 1) % len(self.search_positions)
+            self.text_widget.see(self.search_positions[self.current_search_index])
+            self.text_widget.tag_remove("current_search", "1.0", tk.END)
+            self.text_widget.tag_add("current_search", self.search_positions[self.current_search_index],
+                                     f"{self.search_positions[self.current_search_index]} + {len(self.search_var.get())}c")
+            self.text_widget.tag_config("current_search", background="green", foreground="white")
+
+    def focus_previous_search_result(self, event=None):
+        if self.search_positions:
+            self.current_search_index = (self.current_search_index - 1) % len(self.search_positions)
+            self.text_widget.see(self.search_positions[self.current_search_index])
+            self.text_widget.tag_remove("current_search", "1.0", tk.END)
+            self.text_widget.tag_add("current_search", self.search_positions[self.current_search_index],
+                                     f"{self.search_positions[self.current_search_index]} + {len(self.search_var.get())}c")
+            self.text_widget.tag_config("current_search", background="green", foreground="white")
 
     def show_full_csv(self, event):
         # Obtener el índice de la línea donde se hizo doble clic
