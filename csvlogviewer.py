@@ -29,23 +29,28 @@ class CSVViewerApp:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
 
-        # Crear barra de búsqueda
+        # Crear marco de búsqueda y filtro
         search_frame = tk.Frame(self.root)
         search_frame.pack(fill=tk.X, padx=10, pady=5)
 
+        # Crear etiqueta y entrada para el filtro
         filter_label = tk.Label(search_frame, text="Filter:")
-        filter_label.pack(side=tk.LEFT, padx=(0, 10))
+        filter_label.grid(row=0, column=0, padx=(0, 10), pady=5, sticky=tk.W)
 
         filter_entry = tk.Entry(search_frame, textvariable=self.filter_var)
-        filter_entry.pack(fill=tk.X, expand=True)
+        filter_entry.grid(row=0, column=1, padx=(0, 10), pady=5, sticky=tk.EW)
         filter_entry.bind("<KeyRelease>", self.update_text_widget)
 
+        # Crear etiqueta y entrada para la búsqueda
         search_label = tk.Label(search_frame, text="Search:")
-        search_label.pack(side=tk.LEFT, padx=(10, 10))
+        search_label.grid(row=0, column=2, padx=(10, 10), pady=5, sticky=tk.W)
 
         search_entry = tk.Entry(search_frame, textvariable=self.search_var)
-        search_entry.pack(fill=tk.X, expand=True)
+        search_entry.grid(row=0, column=3, padx=(0, 10), pady=5, sticky=tk.EW)
         search_entry.bind("<KeyRelease>", self.highlight_search_term)
+
+        search_frame.columnconfigure(1, weight=1)
+        search_frame.columnconfigure(3, weight=1)
 
         # Crear Text widget y scrollbar
         self.text_widget = tk.Text(self.root, wrap=tk.NONE)
@@ -152,9 +157,8 @@ class CSVViewerApp:
         # Mantener el foco del scroll en la línea donde se hizo doble clic
         self.text_widget.see(f"{original_index + 1}.0")
 
-        # Limpiar la barra de búsqueda y filtro
-        self.filter_var.set("")
-        self.search_var.set("")
+        # Volver a resaltar los términos de búsqueda actuales
+        self.highlight_search_term()
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk()
