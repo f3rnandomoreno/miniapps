@@ -79,7 +79,7 @@ class CSVViewerApp:
                     # Leer el archivo CSV con la codificación detectada
                     df = pd.read_csv(file_path, header=None, encoding=encoding)
                     df = df.drop_duplicates()  # Eliminar duplicados
-                    self.data = df.astype(str).values.flatten().tolist()
+                    self.data = df.apply(lambda row: ', '.join(row.astype(str)), axis=1).tolist()
                     self.data.sort()
                     self.update_text_widget()
                     messagebox.showinfo("Éxito", f"Archivo cargado correctamente. Codificación detectada: {encoding}")
