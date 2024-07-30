@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from tkinterdnd2 import DND_FILES, TkinterDnD
 import pandas as pd
 import os
 import chardet
@@ -19,7 +18,6 @@ class CSVViewerApp:
         self.current_search_index = -1
 
         self.create_widgets()
-        self.setup_dnd()
         self.setup_shortcuts()
 
     def create_widgets(self):
@@ -74,10 +72,6 @@ class CSVViewerApp:
         self.text_widget.bind("<Double-1>", self.show_full_csv)
         self.text_widget.bind("<Button-1>", self.click_search_result)
 
-    def setup_dnd(self):
-        self.root.drop_target_register(DND_FILES)
-        self.root.dnd_bind('<<Drop>>', self.on_drop)
-
     def setup_shortcuts(self):
         self.root.bind('<Control-o>', lambda event: self.load_csv())
         self.root.bind('<Alt-Right>', self.focus_next_search_result)
@@ -109,11 +103,6 @@ class CSVViewerApp:
                     raise FileNotFoundError(f"No existe el archivo: '{file_path}'")
             except Exception as e:
                 messagebox.showerror("Error", f"Error al cargar el archivo CSV: {e}")
-
-    def on_drop(self, event):
-        file_path = event.data
-        if file_path:
-            self.load_csv(file_path=file_path)
 
     def update_text_widget(self, event=None):
         filter_term = self.filter_var.get().lower()
@@ -222,6 +211,6 @@ class CSVViewerApp:
             self.text_widget.tag_config("current_search", background="green", foreground="white")
 
 if __name__ == "__main__":
-    root = TkinterDnD.Tk()
+    root = tk.Tk()
     app = CSVViewerApp(root)
     root.mainloop()
