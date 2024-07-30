@@ -10,6 +10,7 @@ class CSVViewerApp:
         self.root = root
         self.root.title("CSV Viewer")
 
+        self.filter_var = tk.StringVar()
         self.search_var = tk.StringVar()
         self.data = []
         self.filtered_data = []
@@ -32,12 +33,19 @@ class CSVViewerApp:
         search_frame = tk.Frame(self.root)
         search_frame.pack(fill=tk.X, padx=10, pady=5)
 
+        filter_label = tk.Label(search_frame, text="Filter:")
+        filter_label.pack(side=tk.LEFT, padx=(0, 10))
+
+        filter_entry = tk.Entry(search_frame, textvariable=self.filter_var)
+        filter_entry.pack(fill=tk.X, expand=True)
+        filter_entry.bind("<KeyRelease>", self.update_text_widget)
+
         search_label = tk.Label(search_frame, text="Search:")
-        search_label.pack(side=tk.LEFT, padx=(0, 10))
+        search_label.pack(side=tk.LEFT, padx=(10, 10))
 
         search_entry = tk.Entry(search_frame, textvariable=self.search_var)
         search_entry.pack(fill=tk.X, expand=True)
-        search_entry.bind("<KeyRelease>", self.update_text_widget)
+        search_entry.bind("<KeyRelease>", self.highlight_search_term)
 
         # Crear Text widget y scrollbar
         self.text_widget = tk.Text(self.root, wrap=tk.NONE)
@@ -94,14 +102,30 @@ class CSVViewerApp:
             self.load_csv(file_path)
 
     def update_text_widget(self, event=None):
-        search_term = self.search_var.get().lower()
+        filter_term = self.filter_var.get().lower()
         self.text_widget.delete(1.0, tk.END)
-        self.filtered_data = [line for line in self.data if search_term in line.lower()]
+        self.filtered_data = [line for line in self.data if filter_term in line.lower()]
         for line in self.filtered_data:
             self.text_widget.insert(tk.END, line + '\n')
-        
+
         # Eliminar la etiqueta "highlight" si existe
         self.text_widget.tag_remove("highlight", "1.0", tk.END)
+        self.highlight_search_term()
+
+    def highlight_search_term(self, event=None):
+        search_term = self.search_var.get().lower()
+        self.text_widget.tag_remove("search_highlight", "1.0", tk.END)
+        if search_term:
+            start_pos = "1.0"
+            while True:
+                start_pos = self.text_widget.search(search_term, start_pos, tk.END, nocase=1)
+                if not start_pos:
+                    break
+                end_pos = f"{start_pos}+{len(search_term)}c"
+                self.text_widget.tag_add("search_highlight", start_pos, end_pos)
+                start_pos = end_pos
+
+            self.text_widget.tag_config("search_highlight", background="blue", foreground="white")
 
     def show_full_csv(self, event):
         # Obtener el índice de la línea donde se hizo doble clic
@@ -128,7 +152,8 @@ class CSVViewerApp:
         # Mantener el foco del scroll en la línea donde se hizo doble clic
         self.text_widget.see(f"{original_index + 1}.0")
 
-        # Limpiar la barra de búsqueda
+        # Limpiar la barra de búsqueda y filtro
+        self.filter_var.set("")
         self.search_var.set("")
 
 if __name__ == "__main__":
