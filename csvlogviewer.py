@@ -8,7 +8,8 @@ import chardet
 class CSVViewerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("CSV Viewer")
+        self.root.title("CSV Log Viewer")
+        self.root.state("zoomed")
 
         self.filter_var = tk.StringVar()
         self.search_var = tk.StringVar()
@@ -69,8 +70,9 @@ class CSVViewerApp:
 
         self.text_widget.config(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
 
-        # Bind double-click event
+        # Bind events
         self.text_widget.bind("<Double-1>", self.show_full_csv)
+        self.text_widget.bind("<Button-1>", self.click_search_result)
 
     def setup_dnd(self):
         self.root.drop_target_register(DND_FILES)
@@ -103,7 +105,6 @@ class CSVViewerApp:
                     self.data = df.apply(lambda row: ', '.join(row.astype(str)), axis=1).tolist()
                     self.data.sort()
                     self.update_text_widget()
-                    messagebox.showinfo("Éxito", f"Archivo cargado correctamente. Codificación detectada: {encoding}")
                 else:
                     raise FileNotFoundError(f"No existe el archivo: '{file_path}'")
             except Exception as e:
@@ -137,7 +138,7 @@ class CSVViewerApp:
                     break
                 end_pos = f"{start_pos}+{len(search_term)}c"
                 self.text_widget.tag_add("search_highlight", start_pos, end_pos)
-                self.search_positions.append(start_pos)
+                self.search_positions.append((start_pos, end_pos))
                 start_pos = end_pos
 
             self.text_widget.tag_config("search_highlight", background="blue", foreground="white")
@@ -147,26 +148,50 @@ class CSVViewerApp:
     def focus_next_search_result(self, event=None):
         if self.search_positions:
             self.current_search_index = (self.current_search_index + 1) % len(self.search_positions)
-            self.text_widget.see(self.search_positions[self.current_search_index])
+            start_pos, end_pos = self.search_positions[self.current_search_index]
+            self.text_widget.see(start_pos)
             self.text_widget.tag_remove("current_search", "1.0", tk.END)
-            self.text_widget.tag_add("current_search", self.search_positions[self.current_search_index],
-                                     f"{self.search_positions[self.current_search_index]} + {len(self.search_var.get())}c")
+            self.text_widget.tag_add("current_search", start_pos, end_pos)
             self.text_widget.tag_config("current_search", background="green", foreground="white")
 
     def focus_previous_search_result(self, event=None):
         if self.search_positions:
             self.current_search_index = (self.current_search_index - 1) % len(self.search_positions)
-            self.text_widget.see(self.search_positions[self.current_search_index])
+            start_pos, end_pos = self.search_positions[self.current_search_index]
+            self.text_widget.see(start_pos)
             self.text_widget.tag_remove("current_search", "1.0", tk.END)
-            self.text_widget.tag_add("current_search", self.search_positions[self.current_search_index],
-                                     f"{self.search_positions[self.current_search_index]} + {len(self.search_var.get())}c")
+            self.text_widget.tag_add("current_search", start_pos, end_pos)
             self.text_widget.tag_config("current_search", background="green", foreground="white")
+
+    def click_search_result(self, event):
+        # Obtener el índice de la posición donde se hizo clic
+        index = self.text_widget.index(f"@{event.x},{event.y}")
+        # Buscar la etiqueta "search_highlight" en esa posición
+        tags = self.text_widget.tag_names(index)
+        if "search_highlight" in tags:
+            self.text_widget.tag_remove("current_search", "1.0", tk.END)
+            for i, (start_pos, end_pos) in enumerate(self.search_positions):
+                if self.text_widget.compare(start_pos, "<=", index) and self.text_widget.compare(end_pos, ">", index):
+                    self.current_search_index = i
+                    self.text_widget.tag_add("current_search", start_pos, end_pos)
+                    self.text_widget.tag_config("current_search", background="green", foreground="white")
+                    break
 
     def show_full_csv(self, event):
         # Obtener el índice de la línea donde se hizo doble clic
-        index = self.text_widget.index("@%d,%d" % (event.x, event.y))
+        index = self.text_widget.index(f"@{event.x},{event.y}")
         line_number = int(index.split(".")[0])
         line_text = self.text_widget.get(f"{line_number}.0", f"{line_number}.end").strip()
+
+        # Verificar si hay un bloque seleccionado dentro de la fila
+        selected_tag_ranges = self.text_widget.tag_ranges("current_search")
+        selected_in_line = False
+        for i in range(0, len(selected_tag_ranges), 2):
+            start = selected_tag_ranges[i]
+            end = selected_tag_ranges[i + 1]
+            if self.text_widget.compare(start, ">=", f"{line_number}.0") and self.text_widget.compare(end, "<=", f"{line_number}.end"):
+                selected_in_line = True
+                break
 
         # Encontrar el índice de la línea en self.data
         try:
@@ -189,6 +214,12 @@ class CSVViewerApp:
 
         # Volver a resaltar los términos de búsqueda actuales
         self.highlight_search_term()
+
+        # Si había un bloque seleccionado dentro de la fila, resaltarlo
+        if selected_in_line:
+            self.text_widget.tag_remove("current_search", "1.0", tk.END)
+            self.text_widget.tag_add("current_search", start, end)
+            self.text_widget.tag_config("current_search", background="green", foreground="white")
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk()
