@@ -4,10 +4,9 @@ import openai
 
 # Lista de modelos disponibles en OpenAI
 AVAILABLE_MODELS = [
-    "gpt-3.5-turbo",
-    "gpt-4",
-    "gpt-4o",
     "gpt-4o-mini",  # Añadido gpt-4o-mini
+    "gpt-4o",
+    "gpt-4",
     "text-davinci-003",
     "text-ada-001",
     "text-babbage-001",
