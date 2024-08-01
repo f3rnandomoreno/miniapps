@@ -1,6 +1,21 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox
 import openai
+
+# Lista de modelos disponibles en OpenAI
+AVAILABLE_MODELS = [
+    "gpt-3.5-turbo",
+    "gpt-4",
+    "gpt-4o",
+    "gpt-4o-mini",  # Añadido gpt-4o-mini
+    "text-davinci-003",
+    "text-ada-001",
+    "text-babbage-001",
+    "text-curie-001",
+    "whisper-1",
+    "code-davinci-002",
+    "text-embedding-ada-002"
+]
 
 class OpenAIApp:
     def __init__(self, root):
@@ -8,7 +23,7 @@ class OpenAIApp:
         self.root.title("OpenAI Chat App")
 
         self.token = None
-        self.models = []
+        self.models = AVAILABLE_MODELS
         self.conversation = []
         self.max_tokens = 128000  # 128k tokens by default
 
@@ -28,11 +43,9 @@ class OpenAIApp:
         self.model_label.pack()
 
         self.model_var = tk.StringVar(self.root)
-        self.model_dropdown = tk.OptionMenu(self.root, self.model_var, "")
+        self.model_var.set(self.models[0])  # Set default model
+        self.model_dropdown = tk.OptionMenu(self.root, self.model_var, *self.models)
         self.model_dropdown.pack()
-
-        self.model_button = tk.Button(self.root, text="Fetch Models", command=self.fetch_models)
-        self.model_button.pack()
 
         self.token_limit_label = tk.Label(self.root, text="Max Tokens (128000 by default):")
         self.token_limit_label.pack()
@@ -54,21 +67,6 @@ class OpenAIApp:
         self.token = self.token_entry.get()
         openai.api_key = self.token
         messagebox.showinfo("Info", "Token set successfully!")
-    
-    def fetch_models(self):
-        try:
-            models = openai.Model.list()
-            self.models = [model['id'] for model in models['data']]
-            self.model_var.set(self.models[0])  # Set default model to the first one in the list
-            self.update_model_dropdown()
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to fetch models: {str(e)}")
-    
-    def update_model_dropdown(self):
-        menu = self.model_dropdown['menu']
-        menu.delete(0, 'end')
-        for model in self.models:
-            menu.add_command(label=model, command=tk._setit(self.model_var, model))
     
     def send_message(self):
         if not self.token:
