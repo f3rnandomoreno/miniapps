@@ -25,8 +25,13 @@ def convert_and_transcribe():
             audio_data = recognizer.record(source)
             text = recognizer.recognize_google(audio_data, language="es-ES")
         
-        # Mostrar la transcripción
-        messagebox.showinfo("Transcripción", text)
+        # Guardar la transcripción en un archivo .txt
+        txt_path = file_path.replace(".ogg", ".txt")
+        with open(txt_path, "w", encoding="utf-8") as txt_file:
+            txt_file.write(text)
+        
+        # Mostrar un mensaje de confirmación
+        messagebox.showinfo("Éxito", f"Transcripción guardada en: {txt_path}")
         
         # Eliminar archivo WAV temporal
         os.remove(wav_path)
