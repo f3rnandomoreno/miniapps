@@ -73,7 +73,6 @@ class TextViewerApp:
 
     def setup_shortcuts(self):
         self.root.bind('<Control-o>', lambda event: self.load_text_file())
-        self.root.bind('<Control-v>', lambda event: self.paste_text())
         self.root.bind('<Alt-Right>', self.focus_next_search_result)
         self.root.bind('<Alt-Left>', self.focus_previous_search_result)
 
@@ -86,41 +85,17 @@ class TextViewerApp:
                     result = chardet.detect(raw_data)
                     encoding = result['encoding']
 
-                with open(file_path, 'r', encoding=encoding) as file:
+                with open(file_path, 'r', encoding=encoding, errors='replace') as file:
                     content = file.read()
                 
                 self.process_text(content)
             except Exception as e:
                 messagebox.showerror("Error", f"Error al cargar el archivo de texto: {e}")
 
-    def paste_text(self, event=None):
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Paste Text")
-        dialog.geometry("600x400")
-
-        text_input = tk.Text(dialog, wrap=tk.WORD)
-        text_input.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
-
-        def submit():
-            content = text_input.get("1.0", tk.END).strip()
-            if content:
-                self.process_text(content)
-            dialog.destroy()
-
-        button_frame = tk.Frame(dialog)
-        button_frame.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Button(button_frame, text="OK", command=submit).pack(side=tk.RIGHT)
-        tk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=10)
-
-        dialog.transient(self.root)
-        dialog.grab_set()
-        self.root.wait_window(dialog)
-
     def process_text(self, content):
         # Dividir el contenido en líneas y eliminar líneas vacías
-        self.data = [line.strip() for line in content.split('\n') if line.strip()]
-        self.data.sort()
+        self.data = [line.strip() for line in content.splitlines() if line.strip()]
+        self.data.sort(key=lambda x: x.lower())  # Ordenar ignorando mayúsculas y minúsculas
         self.update_text_widget()
 
     def update_text_widget(self, event=None):
@@ -128,7 +103,10 @@ class TextViewerApp:
         self.text_widget.delete(1.0, tk.END)
         self.filtered_data = [line for line in self.data if filter_term in line.lower()]
         for line in self.filtered_data:
-            self.text_widget.insert(tk.END, line + '\n')
+            self.text_widget.insert(tk.END, line + '\n', 'line')
+
+        # Configurar la fuente para soportar caracteres especiales
+        self.text_widget.tag_configure('line', font=('TkDefaultFont', 10))
 
         # Eliminar la etiqueta "highlight" si existe
         self.text_widget.tag_remove("highlight", "1.0", tk.END)
