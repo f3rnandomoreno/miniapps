@@ -95,7 +95,7 @@ class TextViewerApp:
     def process_text(self, content):
         # Dividir el contenido en líneas y eliminar líneas vacías
         self.data = [line.strip() for line in content.splitlines() if line.strip()]
-        self.data.sort(key=lambda x: x.lower())  # Ordenar ignorando mayúsculas y minúsculas
+        # Se ha eliminado la línea de ordenamiento
         self.update_text_widget()
 
     def update_text_widget(self, event=None):
