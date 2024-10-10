@@ -31,6 +31,7 @@ def create_table_from_csv():
         
         conn.close()
         messagebox.showinfo("Éxito", f"Tabla '{table_name}' creada correctamente.")
+        show_tables()  # Update the list of tables
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo cargar el archivo CSV: {str(e)}")
 
@@ -62,10 +63,30 @@ def execute_query():
     except Exception as e:
         messagebox.showerror("Error", f"Error al ejecutar la consulta: {str(e)}")
 
+# Función para mostrar las tablas en la base de datos
+def show_tables():
+    try:
+        # Conectar a la base de datos SQLite
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        
+        # Obtener la lista de tablas
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        
+        # Mostrar las tablas en el Text widget
+        text_tables.delete("1.0", tk.END)
+        for table in tables:
+            text_tables.insert(tk.END, table[0] + "\n")
+        
+        conn.close()
+    except Exception as e:
+        messagebox.showerror("Error", f"Error al obtener las tablas: {str(e)}")
+
 # Crear la ventana principal
 root = tk.Tk()
 root.title("CSV a SQLite")
-root.geometry("600x500")
+root.geometry("600x600")
 
 # Etiqueta y campo para el archivo CSV
 label_file_path = tk.Label(root, text="Selecciona el archivo CSV:")
@@ -105,6 +126,17 @@ label_result.pack(pady=5)
 
 text_result = tk.Text(root, height=10, width=60)
 text_result.pack(pady=5)
+
+# Área de texto para mostrar las tablas
+label_tables = tk.Label(root, text="Tablas en la base de datos:")
+label_tables.pack(pady=5)
+
+text_tables = tk.Text(root, height=10, width=60)
+text_tables.pack(pady=5)
+
+# Botón para mostrar las tablas
+button_show_tables = tk.Button(root, text="Mostrar Tablas", command=show_tables)
+button_show_tables.pack(pady=10)
 
 # Ejecutar el bucle principal de la ventana
 root.mainloop()
